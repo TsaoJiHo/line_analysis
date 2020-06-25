@@ -38,7 +38,7 @@ def create_dataframe(file_path):
                 d['date'].append(uniform_format[0])
                 d['time'].append(uniform_format[1])
                 d['name'].append(uniform_format[2])
-                d['text'].append(uniform_format[3])
+                d['text'].append(' '.join(uniform_format[3]).replace('"', ''))
         df = pd.DataFrame(d)
         df.to_csv(file_path.with_suffix('.csv'), index=False)
 
