@@ -13,14 +13,17 @@ def create_dataframe(file_path):
         date = ''
         d = {'date': [], 'time': [], 'name': [], 'text': []}
         for i, row in enumerate(rows):
-            row = row.split()
+            row = row.split('	')
+            for k, text in enumerate(row):
+                row[k] = text.replace('\n', '')
             rows[i] = row
             # get date
             if is_date(row):
                 date = row[0]
+                continue
             # get uniform list
             is_uniform_format = len(row) > 0 and row[0][0:2] in ('下午', '上午')
-            if is_uniform_format and row[1][-5:] != '已收回訊息' and row[1][-5:] != '的相簿刪除':
+            if is_uniform_format and len(row) >= 3:
                 uniform_format = []
                 uniform_format.append(date)
                 uniform_format.append(row[0])
@@ -40,9 +43,9 @@ def create_dataframe(file_path):
         df.to_csv(file_path.with_suffix('.csv'), index=False)
 
 def load_dataframe():
-    dataframes = []
+    dataframes = {}
     for path in DATA_FOLDER_PATH.rglob('*csv'):
-        dataframes.append(pd.read_csv(path))
+        dataframes[path.stem] = pd.read_csv(path)
     return dataframes
 
 def main():
