@@ -42,7 +42,7 @@ def main():
         st.header(f'聊天天數 : {days} 天')
         st.header(f'訊息總數 : {len(df)}')
         # phone time
-        # st.write(list(df['text']))
+        st.write(df[df['text'].str.contains('愛愛', na = False)])
 
     # plot message count by name
     d = {'name': [], '訊息數': []}
