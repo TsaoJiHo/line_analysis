@@ -2,12 +2,18 @@ import streamlit as st
 import pandas as pd
 import line_to_dataframe as line
 import plotly.express as px
+import plotly.graph_objects as go
 
 def main():
     # load dataframe
-    dfs = line.load_dataframe()
+    dfs = load_dataframe()
     choice = st.sidebar.selectbox('Select Dataset', [x for x in dfs])
     df = dfs[choice]
+
+    # text filter
+    text = st.sidebar.text_input('Word Filter')
+    if text:
+        df = df[df['text'].str.contains(text, na = False)]
 
     # names selection
     names = list(df.groupby('name').groups)
@@ -38,11 +44,10 @@ def main():
             month += 12
             year -= 1
         days = len(list(df.groupby('date').groups))
-        st.header(f'聊天持續 : {year} 年{month} 月{day} 天')
-        st.header(f'聊天天數 : {days} 天')
-        st.header(f'訊息總數 : {len(df)}')
-        # phone time
-        st.write(df[df['text'].str.contains('愛愛', na = False)])
+        st.subheader(f'📆 聊天持續 : {year} 年{month} 月{day} 天')
+        st.subheader(f'📆 聊天天數 : {days} 天')
+        st.title('訊息統計')
+        st.subheader(f'💬 訊息總數 : {len(df)} 則')
 
     # plot message count by name
     d = {'name': [], '訊息數': []}
@@ -55,21 +60,20 @@ def main():
     fig = px.bar(plot_df, y='訊息數', x='name', text='訊息數')
     fig.update_layout(title_text='訊息總數分佈')
     st.write(fig)
-    if len(names) > 2:
-        st.write()
 
-    # plot message count by date
-    d = {'date': [], '訊息數': []}
-    dates = df.groupby('date').groups
-    for date in dates:
-        d['date'].append(date)
-        filter = df['date'] == date
-        d['訊息數'].append(len(df[filter]))
-    plot_df = pd.DataFrame(d)
-    fig = px.line(plot_df, x='date', y='訊息數')
-    fig.update_layout(title_text='每日訊息總數')
+    # plot pie
+    labels = ['訊息', '語音訊息','貼圖','照片','影片']
+    sound_text = len(df[df['text'].str.contains('[語音訊息]', na = False)])
+    sticker = len(df[df['text'].str.contains('[貼圖]', na = False)])
+    image = len(df[df['text'].str.contains('[照片]', na = False)])
+    video = len(df[df['text'].str.contains('[影片]', na = False)])
+    text = len(df) - sound_text - sticker - image - video
+    values = [text, sound_text, sticker, image, video]
+    fig = go.Figure(data=[go.Pie(labels=labels, values=values)])
+    fig.update_layout(title_text='訊息比例')
     st.write(fig)
 
+    # plot message count by date
     d = {'name':[], 'date': [], '訊息數': []}
     dates = df.groupby('date').groups
     for date in dates:
@@ -82,12 +86,50 @@ def main():
     plot_df = pd.DataFrame(d)
     if not plot_df.empty:
         fig = px.line(plot_df, x='date', y='訊息數', color='name')
-        fig.update_layout(title_text='每日訊息總數')
+        fig.update_layout(title_text='每日訊息總數 by Members')
         st.write(fig)
 
+    d = {'date': [], '訊息數': []}
+    dates = df.groupby('date').groups
+    for date in dates:
+        d['date'].append(date)
+        filter = df['date'] == date
+        d['訊息數'].append(len(df[filter]))
+    plot_df = pd.DataFrame(d)
+    fig = px.line(plot_df, x='date', y='訊息數')
+    fig.update_layout(title_text='每日訊息總數 in Total')
+    st.write(fig)
+    
+     # talk time
+    if not df.empty:
+        talk_df = df[df['text'].str.contains('☎ 通話時間', na = False)]
+        hour = 0
+        minute = 0
+        second = 0
+        for time in talk_df['text']:
+            time = time.replace('☎ 通話時間', '').split(':')
+            if len(time) == 2:
+                minute += int(time[0])
+                second += int(time[1])
+            elif len(time) == 3:
+                hour += int(time[0])
+                minute += int(time[1])
+                second += int(time[2])
+        if second >= 60:
+            minute += int(second / 60)
+            second %= 60
+        if minute >= 60:
+            hour += int(minute / 60)
+            minute %= 60
+        st.title('通話統計')
+        st.subheader(f'☎ 通話次數 : {len(talk_df)} 次')
+        st.subheader(f'☎ 通話總長 : {hour} 時 {minute} 分 {second} 秒')
     st.title('Row Data')
     st.write(df)
-    
+
+@st.cache
+def load_dataframe():
+    return line.load_dataframe()
 
 if __name__ == '__main__':
     main()
