@@ -100,7 +100,7 @@ def main():
     fig.update_layout(title_text='每日訊息總數 in Total')
     st.write(fig)
     
-     # talk time
+    # talk time
     if not df.empty:
         talk_df = df[df['text'].str.contains('☎ 通話時間', na = False)]
         hour = 0
@@ -124,7 +124,58 @@ def main():
         st.title('通話統計')
         st.subheader(f'☎ 通話次數 : {len(talk_df)} 次')
         st.subheader(f'☎ 通話總長 : {hour} 時 {minute} 分 {second} 秒')
-    st.title('Row Data')
+        # talk time plot
+        d = {'name': [], '打給對方次數': [], '分鐘': []}
+        names = talk_df.groupby('name').groups
+        for name in names:
+            d['name'].append(name)
+            d['打給對方次數'].append(len(talk_df[talk_df['name'] == name]))
+            hour = 0
+            minute = 0
+            second = 0
+            for time in talk_df[talk_df['name'] == name]['text']:
+                time = time.replace('☎ 通話時間', '').split(':')
+                if len(time) == 2:
+                    minute += int(time[0])
+                    second += int(time[1])
+                elif len(time) == 3:
+                    hour += int(time[0])
+                    minute += int(time[1])
+                    second += int(time[2])
+            minute += hour * 60 + int(second / 60)
+            d['分鐘'].append(minute)
+        plot_df = pd.DataFrame(d)
+        fig = px.bar(plot_df, x='name', y='打給對方次數', text='打給對方次數')
+        fig.update_layout(title_text='通話次數分佈')
+        st.write(fig)
+        fig = px.bar(plot_df, x='name', y='分鐘', text='分鐘')
+        fig.update_layout(title_text='通話分鐘分佈')
+        st.write(fig)
+    d = {'date': [], '通話分鐘': []}
+    dates = df.groupby('date').groups
+    for date in dates:
+        d['date'].append(date)
+        filter = df['date'] == date
+        hour = 0
+        minute = 0
+        second = 0
+        for time in talk_df[talk_df['date'] == date]['text']:
+            time = time.replace('☎ 通話時間', '').split(':')
+            if len(time) == 2:
+                minute += int(time[0])
+                second += int(time[1])
+            elif len(time) == 3:
+                hour += int(time[0])
+                minute += int(time[1])
+                second += int(time[2])
+        minute += hour * 60 + int(second / 60)
+        d['通話分鐘'].append(minute)
+    plot_df = pd.DataFrame(d)
+    fig = px.line(plot_df, x='date', y='通話分鐘')
+    fig.update_layout(title_text='每日通話分鐘')
+    st.write(fig)   
+    
+    st.title('Data')
     st.write(df)
 
 @st.cache
