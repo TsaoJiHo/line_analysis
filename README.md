@@ -16,7 +16,7 @@ pip install plotly
 將 `[LINE] XXX的聊天.txt` 放置於 `data` 資料夾
 
 在檔案目錄下依序執行指令
-
-`python line_to_dataframe.py`
-
-`streamlit run main.py`
+```
+python line_to_dataframe.py
+streamlit run main.py
+```
