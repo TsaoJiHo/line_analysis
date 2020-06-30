@@ -3,6 +3,10 @@ import pandas as pd
 import line_to_dataframe as line
 import plotly.express as px
 import plotly.graph_objects as go
+import jieba
+from collections import defaultdict
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 
 def main():
     # load dataframe
@@ -14,6 +18,12 @@ def main():
     text = st.sidebar.text_input('Word Filter')
     if text:
         df = df[df['text'].str.contains(text, na = False)]
+
+    # part filter
+    x = st.sidebar.slider('Show Partial Data', 0.0, 1.0, (0.0, 1.0), 0.1)
+    start = int(x[0] * len(df))
+    end = int(x[1] * len(df))
+    df = df[start:end]
 
     # names selection
     names = list(df.groupby('name').groups)
@@ -62,13 +72,14 @@ def main():
     st.write(fig)
 
     # plot pie
-    labels = ['訊息', '語音訊息','貼圖','照片','影片']
+    labels = ['訊息', '語音訊息', '貼圖', '照片', '影片', '通話']
     sound_text = len(df[df['text'].str.contains('[語音訊息]', na = False)])
     sticker = len(df[df['text'].str.contains('[貼圖]', na = False)])
     image = len(df[df['text'].str.contains('[照片]', na = False)])
     video = len(df[df['text'].str.contains('[影片]', na = False)])
-    text = len(df) - sound_text - sticker - image - video
-    values = [text, sound_text, sticker, image, video]
+    phone_call = len(df[df['text'].str.contains('☎', na = False)])
+    text = len(df) - sound_text - sticker - image - video - phone_call
+    values = [text, sound_text, sticker, image, video, phone_call]
     fig = go.Figure(data=[go.Pie(labels=labels, values=values)])
     fig.update_layout(title_text='訊息比例')
     st.write(fig)
@@ -173,8 +184,49 @@ def main():
     plot_df = pd.DataFrame(d)
     fig = px.line(plot_df, x='date', y='通話分鐘')
     fig.update_layout(title_text='每日通話分鐘')
-    st.write(fig)   
-    
+    st.write(fig)
+
+    # text plot
+    def is_text(text):
+        word_filter = ('[照片]', '[影片]', '[貼圖]', '[語音訊息]', '☎')
+        for word in word_filter:
+            if word in text:
+                return False
+        return True
+
+    st.title('文字統計')
+    for name in df.groupby('name').groups:
+        word_count_2w = defaultdict(int)
+        word_count_3w = defaultdict(int)
+        df_groupby_name = df[df['name'] == name]
+        for text in df_groupby_name['text']:
+            text = str(text)
+            if not is_text(text):
+                continue
+            seg_list = jieba.cut(text)
+            for word in seg_list:
+                if len(word) >= 2:
+                    word_count_2w[word] += 1
+                if len(word) >= 3:
+                    word_count_3w[word] += 1
+        sorted_word_count_2w = sorted(list(word_count_2w.items()), key=lambda x: -x[1])
+        sorted_word_count_3w = sorted(list(word_count_3w.items()), key=lambda x: -x[1])
+        words = set()
+        for word in sorted_word_count_2w[:35]:
+            words.add(word[0])
+        for word in sorted_word_count_3w[:15]:
+            words.add(word[0])
+        font = 'SourceHanSansTW-Regular.otf'
+        wordcloud = WordCloud(font_path=font).generate(' '.join(list(words)))
+        plt.figure(figsize=(20,10), facecolor='k')
+        plt.imshow(wordcloud, interpolation='bilinear')
+        plt.axis("off")
+        plt.tight_layout(pad=0)
+        plt.show()
+        st.subheader(name)
+        st.pyplot()
+
+    # show data
     st.title('Data')
     st.write(df)
 

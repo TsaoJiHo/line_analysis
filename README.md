@@ -12,6 +12,9 @@ pip install streamlit
 pip install pandas
 pip install pathlib
 pip install plotly
+pip install jieba
+pip install wordcloud
+pip install matplotlib
 ```
 將 `[LINE] XXX的聊天.txt` 放置於 `data` 資料夾
 
