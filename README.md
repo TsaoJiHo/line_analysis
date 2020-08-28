@@ -1,5 +1,9 @@
 # LINE 聊天紀錄分析
 
+## 介紹影片 :
+
+https://www.youtube.com/watch?v=buYvTqOWv5w
+
 ## Iphone IOS :
 
 LINE 聊天頁面右上角選單 -> 其他設定 -> 傳送聊天紀錄 -> 傳送 `[LINE] XXX的聊天.txt`
