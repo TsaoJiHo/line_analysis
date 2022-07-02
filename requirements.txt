@@ -1,0 +1,7 @@
+streamlit
+pandas
+pathlib
+plotly
+jieba
+wordcloud
+matplotlib
